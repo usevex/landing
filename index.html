@@ -740,17 +740,38 @@
 
   reveals.forEach(el => observer.observe(el));
 
-  // Resolve latest .exe download URL
-  fetch('https://api.github.com/repos/usevex/app/releases/latest')
-    .then(r => r.json())
-    .then(release => {
-      const exe = release.assets?.find(a => a.name.endsWith('-setup.exe'));
-      if (!exe) return;
-      document.querySelectorAll('.hero-cta, .cta-btn').forEach(a => {
-        a.href = exe.browser_download_url;
-      });
-    })
-    .catch(() => {});
+  // Detect platform and resolve latest download
+  (() => {
+    const ua = navigator.userAgent;
+    const platform = /Win/.test(ua) ? 'windows'
+      : /Mac/.test(ua) ? 'mac'
+      : /Linux/.test(ua) ? 'linux' : null;
+
+    const match = {
+      windows: { ext: '-setup.exe', label: 'Windows' },
+      mac:     { ext: '.dmg',       label: 'macOS' },
+      linux:   { ext: '.AppImage',  label: 'Linux' },
+    };
+
+    const ctaBtn = document.querySelector('.cta-btn');
+    if (platform && match[platform]) {
+      ctaBtn.lastChild.textContent = `\n      Download for ${match[platform].label}`;
+    }
+
+    fetch('https://api.github.com/repos/usevex/app/releases/latest')
+      .then(r => r.json())
+      .then(release => {
+        if (!release.assets) return;
+        const m = platform && match[platform];
+        const asset = m && release.assets.find(a => a.name.endsWith(m.ext));
+        if (asset) {
+          document.querySelectorAll('.hero-cta, .cta-btn').forEach(a => {
+            a.href = asset.browser_download_url;
+          });
+        }
+      })
+      .catch(() => {});
+  })();
 </script>
 
 </body>
