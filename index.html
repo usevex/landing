@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vex — Voice to text, instantly.</title>
+<link rel="icon" type="image/png" href="favicon.png">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Vex — Voice to text, instantly.">
+<meta property="og:description" content="Press a key. Speak. Your words appear wherever your cursor is. No clicks, no windows, no friction.">
+<meta property="og:image" content="https://getvex.app/og-image.png">
+<meta property="og:url" content="https://getvex.app">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vex — Voice to text, instantly.">
+<meta name="twitter:description" content="Press a key. Speak. Your words appear wherever your cursor is.">
+<meta name="twitter:image" content="https://getvex.app/og-image.png">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Instrument+Serif:ital@0;1&display=swap');
+
+  :root {
+    --bg: #1a1a2e;
+    --bg-deep: #12122a;
+    --red: #e94560;
+    --red-hover: #d63851;
+    --red-dim: rgba(233, 69, 96, 0.12);
+    --red-glow: rgba(233, 69, 96, 0.06);
+    --teal: #4ecdc4;
+    --teal-hover: #3dbdb4;
+    --teal-dim: rgba(78, 205, 196, 0.12);
+    --text: #c8c8d8;
+    --text-dim: #6a6a80;
+    --text-bright: #e8e8f0;
+    --border: rgba(255, 255, 255, 0.06);
+  }
+
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--bg-deep);
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- Utility --- */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* --- Nav --- */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(26, 26, 46, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    color: var(--text-bright);
+    letter-spacing: -0.5px;
+    text-decoration: none;
+  }
+
+  .nav-logo span {
+    color: var(--red);
+  }
+
+  .nav-link {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    transition: color 0.2s;
+  }
+
+  .nav-link:hover {
+    color: var(--text);
+  }
+
+  /* --- Hero --- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    padding: 120px 32px 80px;
+  }
+
+  .hero-wave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 300px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* --- Hero Orb --- */
+  .hero-orb-wrap {
+    margin-bottom: 48px;
+    position: relative;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.2s forwards;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .hero-orb {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    position: relative;
+    background: radial-gradient(circle at 50% 50%,
+      rgba(80, 80, 105, 0.35),
+      rgba(25, 25, 45, 0.2));
+    border: 1px solid rgba(200, 200, 216, 0.12);
+    box-shadow: 0 0 8px rgba(80, 80, 105, 0.1);
+    transition: box-shadow 0.35s ease,
+                background 0.35s ease,
+                border-color 0.35s ease;
+  }
+
+  .hero-orb.recording {
+    background: radial-gradient(circle at 50% 50%,
+      rgba(233, 69, 96, 0.65),
+      rgba(130, 25, 45, 0.75));
+    border-color: transparent;
+    box-shadow:
+      0 0 18px rgba(233, 69, 96, 0.4),
+      0 0 44px rgba(233, 69, 96, 0.25);
+    animation: orb-pulse 2.8s ease-in-out infinite;
+  }
+
+  .hero-orb.recording.speaking::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--red);
+    animation: orb-ripple 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+    pointer-events: none;
+  }
+
+  .hero-orb.transcribing {
+    background: radial-gradient(circle at 50% 50%,
+      rgba(233, 160, 60, 0.55),
+      rgba(150, 75, 18, 0.65));
+    border-color: transparent;
+    box-shadow:
+      0 0 18px rgba(233, 160, 60, 0.4),
+      0 0 44px rgba(233, 160, 60, 0.2);
+    animation: orb-transcribe 0.6s ease-in-out infinite;
+  }
+
+  @keyframes orb-pulse {
+    0%, 100% { box-shadow: 0 0 18px rgba(233, 69, 96, 0.4), 0 0 44px rgba(233, 69, 96, 0.25); }
+    50% { box-shadow: 0 0 26px rgba(233, 69, 96, 0.4), 0 0 54px rgba(233, 69, 96, 0.25); }
+  }
+
+  @keyframes orb-ripple {
+    0% { transform: scale(1); opacity: 0.55; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  @keyframes orb-transcribe {
+    0%, 100% { box-shadow: 0 0 18px rgba(233, 160, 60, 0.4), 0 0 44px rgba(233, 160, 60, 0.2); }
+    50% { box-shadow: 0 0 26px rgba(233, 160, 60, 0.4), 0 0 54px rgba(233, 160, 60, 0.2); }
+  }
+
+  .hero-orb-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    height: 14px;
+    transition: opacity 0.3s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-orb.recording,
+    .hero-orb.transcribing {
+      animation: none;
+    }
+    .hero-orb.recording.speaking::after {
+      animation: none;
+      opacity: 0.4;
+      transform: scale(1.5);
+    }
+  }
+
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(36px, 6vw, 56px);
+    font-weight: 400;
+    color: var(--text-bright);
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.4s forwards;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--red);
+  }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    max-width: 380px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+    font-weight: 300;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.6s forwards;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: var(--red);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.2s, box-shadow 0.2s;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.8s forwards;
+  }
+
+  .hero-cta:hover {
+    background: #d63851;
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.25);
+  }
+
+  .hero-cta svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: fadeIn 1s ease 1.5s forwards;
+  }
+
+  .scroll-hint::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 24px;
+    background: var(--text-dim);
+    margin: 8px auto 0;
+    animation: scrollPulse 2s ease infinite;
+  }
+
+  /* --- Section --- */
+  section {
+    padding: 100px 0;
+    position: relative;
+  }
+
+  .section-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    margin-bottom: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--red);
+    opacity: 0.5;
+  }
+
+  /* --- Features --- */
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .feature {
+    background: var(--bg);
+    padding: 32px;
+    transition: background 0.3s;
+  }
+
+  .feature:hover {
+    background: rgba(233, 69, 96, 0.03);
+  }
+
+  .feature-icon {
+    font-size: 14px;
+    color: var(--red);
+    margin-bottom: 16px;
+    font-family: 'DM Mono', monospace;
+    opacity: 0.8;
+  }
+
+  .feature h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+
+  .feature p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* --- How it works --- */
+  .steps {
+    display: flex;
+    gap: 0;
+    position: relative;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--red), transparent);
+    opacity: 0.2;
+  }
+
+  .step {
+    flex: 1;
+    padding-right: 24px;
+  }
+
+  .step-num {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 20px;
+    background: var(--bg);
+    position: relative;
+  }
+
+  .step h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+
+  .step p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .step-key {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* --- CTA --- */
+  .cta-section {
+    text-align: center;
+    padding: 80px 0 120px;
+  }
+
+  .cta-section h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+  }
+
+  .cta-section p {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  }
+
+  .cta-btn:hover {
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.2);
+  }
+
+  /* --- Footer --- */
+  footer {
+    padding: 32px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* --- Divider --- */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 32px;
+  }
+
+  /* --- Animations --- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* --- Responsive --- */
+  @media (max-width: 640px) {
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .steps {
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .steps::before {
+      display: none;
+    }
+
+    .step {
+      padding-right: 0;
+    }
+
+    nav {
+      padding: 16px 20px;
+    }
+
+    .container {
+      padding: 0 20px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo"><span>V</span>ex</a>
+  <a href="#download" class="nav-link">Download</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <canvas class="hero-wave" id="wave-canvas"></canvas>
+
+  <div class="hero-orb-wrap">
+    <div class="hero-orb" id="hero-orb"></div>
+    <div class="hero-orb-label" id="hero-orb-label"></div>
+  </div>
+
+  <h1>Voice to text, <em>instantly.</em></h1>
+  <p class="hero-sub">Press a key. Speak. Your words appear wherever your cursor is. No clicks, no windows, no friction.</p>
+  <a href="#download" class="hero-cta">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v9m0 0L3.5 6.5M7 10l3.5-3.5M1 13h12"/></svg>
+    Download
+  </a>
+
+  <div class="scroll-hint">scroll</div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Features -->
+<section>
+  <div class="container">
+    <div class="section-label reveal">Features</div>
+    <div class="features-grid reveal">
+      <div class="feature">
+        <div class="feature-icon">⌨</div>
+        <h3>Global hotkey</h3>
+        <p>One shortcut to start and stop recording from anywhere. Works in any app, any window, any context.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">◉</div>
+        <h3>Local & private</h3>
+        <p>Runs entirely on your machine using Whisper AI. No cloud, no network calls, no data leaves your device. Ever.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">▸</div>
+        <h3>Auto-paste</h3>
+        <p>Transcribed text is typed directly into the focused field. No clipboard juggling, no extra steps.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">≡</div>
+        <h3>Transcript history</h3>
+        <p>Every transcription is saved. Copy any past result with one click. Nothing is lost.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- How it works -->
+<section>
+  <div class="container">
+    <div class="section-label reveal">How it works</div>
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Press the hotkey</h3>
+        <p>Hit <span class="step-key">Ctrl+Shift+R</span> from anywhere. A small overlay appears — recording begins.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Speak</h3>
+        <p>Talk naturally. A small orb shows you're recording. Pause when you're done.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Text appears</h3>
+        <p>Silence is detected automatically. Your words are typed into the focused field instantly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA -->
+<section class="cta-section" id="download">
+  <div class="container reveal">
+    <h2>Less clicking. More saying.</h2>
+    <p>Windows, macOS & Linux. Local & private.</p>
+    <a href="#" class="cta-btn">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M7 1v9m0 0L3.5 6.5M7 10l3.5-3.5M1 13h12"/></svg>
+      Download for Windows
+    </a>
+  </div>
+</section>
+
+<footer>
+  Vex — voice to text
+</footer>
+
+<script>
+  // Hero orb demo loop
+  (() => {
+    const orb = document.getElementById('hero-orb');
+    const label = document.getElementById('hero-orb-label');
+
+    const states = [
+      { cls: '',                         text: '',              ms: 2000 },
+      { cls: 'recording',                text: 'recording',     ms: 1200 },
+      { cls: 'recording speaking',       text: 'recording',     ms: 2500 },
+      { cls: 'recording',                text: 'recording',     ms: 600  },
+      { cls: 'transcribing',             text: 'transcribing',  ms: 1200 },
+      { cls: '',                         text: '',              ms: 2500 },
+    ];
+
+    let i = 0;
+    function next() {
+      const s = states[i];
+      orb.className = 'hero-orb' + (s.cls ? ' ' + s.cls : '');
+      label.textContent = s.text;
+      i = (i + 1) % states.length;
+      setTimeout(next, s.ms);
+    }
+    setTimeout(next, 1500);
+  })();
+
+  // Background wave canvas
+  (() => {
+    const canvas = document.getElementById('wave-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, frame = 0;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      w = rect.width;
+      h = 300;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.scale(dpr, dpr);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      frame += 0.003;
+
+      for (let wave = 0; wave < 4; wave++) {
+        ctx.beginPath();
+        const alpha = 0.08 - wave * 0.015;
+        ctx.strokeStyle = `rgba(233, 69, 96, ${alpha})`;
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x <= w; x += 2) {
+          const t = x / w;
+          const envelope = Math.sin(t * Math.PI);
+          const y = h / 2 + envelope * 40 * Math.sin(t * Math.PI * 3 + frame + wave * 0.8);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    resize();
+    draw();
+    window.addEventListener('resize', () => { resize(); });
+  })();
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  reveals.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
