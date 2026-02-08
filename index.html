@@ -739,6 +739,18 @@
   }, { threshold: 0.15 });
 
   reveals.forEach(el => observer.observe(el));
+
+  // Resolve latest .exe download URL
+  fetch('https://api.github.com/repos/usevex/app/releases/latest')
+    .then(r => r.json())
+    .then(release => {
+      const exe = release.assets?.find(a => a.name.endsWith('-setup.exe'));
+      if (!exe) return;
+      document.querySelectorAll('.hero-cta, .cta-btn').forEach(a => {
+        a.href = exe.browser_download_url;
+      });
+    })
+    .catch(() => {});
 </script>
 
 </body>
